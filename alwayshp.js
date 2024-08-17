@@ -244,7 +244,7 @@ export class AlwaysHP extends Application {
                 const color = [(1 - (this.valuePct / 2)), this.valuePct, 0];
                 this.color = `rgba(${parseInt(color[0] * 255)},${parseInt(color[1] * 255)},${parseInt(color[2] * 255)}, 0.7)`;
 
-                this.tokenname = canvas.tokens.controlled[0]?.name ?? canvas.tokens.controlled[0]?.data?.name;
+                this.tokenname = canvas.tokens.controlled[0]?.name ?? canvas.tokens.controlled[0]?.data?.name ?? canvas.tokens.controlled[0]?.document?.name;
                 this.tokenstat = value;
                 this.tokentemp = temp;
                 this.tokentooltip = `HP: ${value}, Temp: ${temp}, Max: ${max}`;
