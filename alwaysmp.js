@@ -178,7 +178,7 @@ export class AlwaysMP extends Application {
         const valuePct = Math.clamp(value, 0, effectiveMax) / displayMax;
 
         this.valuePct = valuePct;
-        this.tokenname = canvas.tokens.controlled[0]?.name ?? canvas.tokens.controlled[0]?.data?.name ?? canvas.tokens.controlled[0]?.document?.name;
+        this.tokenname = canvas.tokens.controlled[0]?.name ?? canvas.tokens.controlled[0]?.data?.name;
         this.tokenstat = value;
         this.tokentooltip = `MP: ${value}, Max: ${max}`;
       }
