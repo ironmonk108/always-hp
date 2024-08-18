@@ -246,7 +246,7 @@
     height: 100%;
     background-color: rgba(0, 0, 0, 0.4);
 }
-#always-hp-mp .resource-mp .bar-mp {
+#always-hp-mp .resource-mp .bar-mp,  #always-hp-mp .window-header .token-stats .stat{
     background-color: rgb(50 191 255 / 70%);
 }
 

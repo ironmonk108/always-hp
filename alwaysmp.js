@@ -37,7 +37,6 @@ export class AlwaysMP extends Application {
   tokenname = '';
   tokenstat = '';
   tokentooltip = '';
-  color = "";
   valuePct = null;
 
   static get defaultOptions() {
