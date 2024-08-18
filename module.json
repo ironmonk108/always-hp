@@ -42,7 +42,7 @@
   ],
   "esmodules": [
     "alwayshp.js",
-    "alwaysmp.mjs"
+    "alwaysmp.js"
   ],
   "styles": [
     "css/alwayshp.css"

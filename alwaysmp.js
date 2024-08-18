@@ -468,7 +468,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
   if (setting("show-option-mp") == 'toggle' && (setting("load-option") == 'everyone' || (setting("load-option") == 'gm' == game.user.isGM))) {
     let tokenControls = controls.find(control => control.name === "token")
     tokenControls.tools.push({
-      name: "toggledialog",
+      name: "toggledialog-mp",
       title: "ALWAYSHP.toggledialog-mp",
       icon: "fas fa-car-battery",
       toggle: true,
