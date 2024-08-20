@@ -286,6 +286,16 @@ export class AlwaysMP extends Application {
       this.changeMP({ value: 'full' });
       this.clearInput();
     });
+    html.find('#alwayshp-btn-hurt-mp').click(ev => {
+        ev.preventDefault();
+        log('set character to hurt');
+        let value = this.getValue;
+        if (value.value != '') {
+            value.value = Math.abs(value.value);
+            this.changeMP(value);
+        }
+        this.clearInput();
+    });
 
     if (setting('double-click')) {
       html.find('#alwayshp-btn-hurt-mp').dblclick(ev => {
