@@ -6,6 +6,12 @@
   "ALWAYSHP.toggledialog": "Toggle AlwaysHP Dialog",
   "ALWAYSHP.Multiple": "Multiple",
 
+  "ALWAYSHP.SetToDead-mp": "Remove all the selected Characteer's MP",
+  "ALWAYSHP.HurtCharacter-mp": "Remove the selected Character's MP",
+  "ALWAYSHP.HealCharacter-mp": "Recover the selected Character's MP",
+  "ALWAYSHP.HealFully-mp": "Fully Recover the selected Character's MP",
+  "ALWAYSHP.toggledialog-mp": "Toggle AlwaysHP MP Dialog",
+
   "ALWAYSHP.alwaysshow": "Always show",
   "ALWAYSHP.dontshow": "Don't show",
   "ALWAYSHP.allowtoggle": "Allow toggling",
@@ -49,6 +55,19 @@
   "ALWAYSHP.hurt-color.hint": "Color of the hurt buttons, foreground and background",
   "ALWAYSHP.focus-key.name": "Focus Key",
   "ALWAYSHP.focus-key.hint": "Focus on the Always HP input field",
+
+  "ALWAYSHP.show-dialog-mp.name": "Show the MP Window",
+  "ALWAYSHP.show-dialog-mp.hint": "Just in case you'd rather not see the MP dialog, if you're on a small display",
+
+  "ALWAYSHP.show-option-mp.name": "MP Window Show Options",
+  "ALWAYSHP.show-option-mp.hint": "Change how the Always MP window is shown",
+  "ALWAYSHP.load-option-mp.name": "MP Window Load Option",
+
+
+  
+  "ALWAYSHP.secondResourcename.name": "Secondary resource to change",
+  "ALWAYSHP.secondResourcename.hint": "Most systems use attributes.mp, but if the system you use doesn't, or if you'd rather use a different property, you can set it here.",
+  
 
   "ALWAYSHP.DeathSavingThrowFail": "Death Savingthrow, Fail",
   "ALWAYSHP.DeathSavingThrowPass": "Death Savingthrow, Pass"
