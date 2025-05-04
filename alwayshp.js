@@ -1,4 +1,5 @@
 import { registerSettings } from "./settings.js";
+const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api
 
 export let debug = (...args) => {
     if (debugEnabled > 1) console.log("DEBUG: alwayshp | ", ...args);
@@ -33,7 +34,7 @@ export let patchFunc = (prop, func, type = "WRAPPER") => {
     }
 }
 
-export class AlwaysHP extends Application {
+export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
     tokenname = '';
     tokenstat = '';
     tokentemp = '';
@@ -42,30 +43,189 @@ export class AlwaysHP extends Application {
     valuePct = null;
     tempPct = null;
 
-    static get defaultOptions() {
+    static get DEFAULT_OPTIONS() {
         let pos = game.user.getFlag("always-hp", "alwayshpPos");
-        return foundry.utils.mergeObject(super.defaultOptions, {
+        return {
             id: "always-hp",
-            template: "modules/always-hp/templates/alwayshp.html",
             classes: ["always-hp"],
-            popOut: true,
-            resizable: false,
-            top: pos?.top || 60,
-            left: pos?.left || (($('#board').width / 2) - 150),
-            width: 300,
-        });
+            window: {
+                resizable: false,
+            },
+            position: {
+                top: pos?.top || 60,
+                left: pos?.left || (($('#board').width / 2) - 150),
+                width: 300
+            }
+        }
+    };
+
+    static PARTS = {
+        main: {
+            root: true,
+            template: "modules/always-hp/templates/alwayshp.html"
+        }
+    };
+
+    persistPosition = foundry.utils.debounce(this.onPersistPosition.bind(this), 1000);
+
+
+    async _renderFrame(options) {
+        const frame = await super._renderFrame(options);
+
+        const header_html = await foundry.applications.handlebars.renderTemplate("modules/always-hp/templates/alwayshp-header.html", this);
+
+        $('.window-header', frame)
+            .empty()
+            .addClass('flexrow')
+            .append(header_html);
+
+        this.refreshSelected();
+        
+        return frame;
     }
 
-    async _render(force, options) {
-        let that = this;
-        return super._render(force, options).then((html) => {
-            $('h4', this.element)
-                .empty()
-                .addClass('flexrow')
-                .append($('<div>').addClass('character-name').html(this.tokenname))
-                .append($('<div>').addClass('token-stats flexrow').attr('title', this.tokentooltip).html((this.tokentemp ? `<div class="stat temp">${this.tokentemp}</div>` : '') + (this.tokenstat ? `<div class="stat" style="background-color:${this.color}">${this.tokenstat}</div>` : '')));
-            delete ui.windows[that.appId];
-            this.refreshSelected();
+    setPosition(position) {
+        position = super.setPosition(position);
+        this.persistPosition(position);
+        return position;
+    }
+
+    _onRender(context, options) {
+        super._onRender(context, options);
+
+        let html = $(this.element);
+
+        html.find('#alwayshp-btn-dead').click(ev => {
+            ev.preventDefault();
+            if (ev.shiftKey == true)
+                this.changeHP({ value: 0 }, 'toggle');
+            else {
+                log('set character to dead');
+                this.changeHP({ value: 'zero' }, true);
+                this.clearInput();
+            }
+        }).contextmenu(ev => {
+            ev.preventDefault();
+            log('set character to hurt');
+            this.changeHP({ value: 'zero' });
+            this.clearInput();
+        });
+        html.find('#alwayshp-btn-hurt').click(ev => {
+            ev.preventDefault();
+            log('set character to hurt');
+            let value = this.getValue;
+            if (value.value != '') {
+                value.value = Math.abs(value.value);
+                if (setting("wounds-system")) value.value = value.value * -1;
+                this.changeHP(value);
+            }
+            this.clearInput();
+        });
+        html.find('#alwayshp-btn-heal').click(ev => {
+            ev.preventDefault();
+            log('set character to heal');
+            let value = this.getValue;
+            if (value.value != '') {
+                value.value = -Math.abs(value.value);
+                if (setting("wounds-system")) value.value = value.value * -1;                
+                this.changeHP(value, false);
+            }
+            this.clearInput();
+        });
+        html.find('#alwayshp-btn-fullheal').click(ev => {
+            ev.preventDefault();
+            log('set character to fullheal');
+            this.changeHP({ value: 'full' }, false);
+            this.clearInput();
+        }).contextmenu(ev => {
+            ev.preventDefault();
+            log('set character to heal');
+            this.changeHP({ value: 'full' });
+            this.clearInput();
+        });
+
+        if (setting('double-click')) {
+            html.find('#alwayshp-btn-hurt').dblclick(ev => {
+                ev.preventDefault();
+                log('set character to hurt');
+                this.changeHP({ value: 'zero' });
+                this.clearInput();
+            });
+
+            html.find('#alwayshp-btn-heal').dblclick(ev => {
+                ev.preventDefault();
+                log('set character to heal');
+                this.changeHP({ value: 'full' });
+                this.clearInput();
+            });
+        }
+        html.find('#alwayshp-hp').focus(ev => {
+            ev.preventDefault();
+            let elem = ev.target;
+            if (elem.setSelectionRange) {
+                elem.focus();
+                elem.setSelectionRange(0, $(elem).val().length);
+            } else if (elem.createTextRange) {
+                var range = elem.createTextRange();
+                range.collapse(true);
+                range.moveEnd('character', $(elem).val().length);
+                range.moveStart('character', 0);
+                range.select();
+            }
+        }).keypress(ev => {
+            if (ev.which == 13) {
+                let value = this.getValue;
+                if (value.value != '' && value.value != 0) {
+                    ev.preventDefault();
+
+                    let rawvalue = $('#alwayshp-hp', this.element).val();
+
+                    if (setting("wounds-system"))
+                        value.value = (rawvalue.startsWith('+') || (!rawvalue.startsWith('-') && !setting("no-sign-negative")) ? Math.abs(value.value) : -Math.abs(value.value));    
+                    else
+                        value.value = (rawvalue.startsWith('+') || (!rawvalue.startsWith('-') && !setting("no-sign-negative")) ? -Math.abs(value.value) : Math.abs(value.value));
+                    this.changeHP(value); //Heal with a + but everything else is a hurt
+                    this.clearInput();
+                }
+            }
+        });
+
+        html.find('.death-savingthrow').click(ev => {
+            ev.preventDefault();
+            log('add death saving throw');
+            this.addDeathST($(ev.currentTarget).hasClass('save'), 1);
+        }).contextmenu(ev => {
+            ev.preventDefault();
+            log('remove death saving throw');
+            this.addDeathST($(ev.currentTarget).hasClass('save'), -1);
+        });
+
+        
+        html.find('.resource').mousemove(ev => {
+            if (!setting("allow-bar-click"))
+                return;
+            let perc = ev.offsetX / $(ev.currentTarget).width();
+            if (setting("wounds-system"))  perc = 1 - perc;            
+            let change = this.getChangeValue(perc);
+
+            if (setting("wounds-system"))  change = change * -1;      
+            $('.bar-change', html).html(change);
+            log("resource change");
+        }).click(ev => {
+            if (!setting("allow-bar-click"))
+                return;
+            let perc = ev.offsetX / $(ev.currentTarget).width();
+            if (setting("wounds-system"))  perc = 1 - perc;
+            let change = this.getChangeValue(perc);
+
+            this.changeHP({ value: -change, target: 'regular' });
+            $('.bar-change', html).html('');
+        });
+
+        html.find('.bar-change').mousemove(ev => {
+            ev.preventDefault;
+            ev.stopPropagation();
+            log("bar change");
         });
     }
 
@@ -194,6 +354,7 @@ export class AlwaysHP extends Application {
         return await actor.update(updates);
     }
 
+    /*
     sendMessage(dh, dt) {
         const speaker = ChatMessage.getSpeaker({ user: game.user.id });
 
@@ -207,6 +368,7 @@ export class AlwaysHP extends Application {
 
         ChatMessage.create(messageData);
     }
+    */
 
     refreshSelected() {
         this.valuePct = null;
@@ -346,142 +508,8 @@ export class AlwaysHP extends Application {
         return change;
     }
 
-    activateListeners(html) {
-        super.activateListeners(html);
-
-        let that = this;
-        html.find('#alwayshp-btn-dead').click(ev => {
-            ev.preventDefault();
-            if (ev.shiftKey == true)
-                this.changeHP({ value: 0 }, 'toggle');
-            else {
-                log('set character to dead');
-                this.changeHP({ value: 'zero' }, true);
-                this.clearInput();
-            }
-        }).contextmenu(ev => {
-            ev.preventDefault();
-            log('set character to hurt');
-            this.changeHP({ value: 'zero' });
-            this.clearInput();
-        });
-        html.find('#alwayshp-btn-hurt').click(ev => {
-            ev.preventDefault();
-            log('set character to hurt');
-            let value = this.getValue;
-            if (value.value != '') {
-                value.value = Math.abs(value.value);
-                if (setting("wounds-system")) value.value = value.value * -1;
-                this.changeHP(value);
-            }
-            this.clearInput();
-        });
-        html.find('#alwayshp-btn-heal').click(ev => {
-            ev.preventDefault();
-            log('set character to heal');
-            let value = this.getValue;
-            if (value.value != '') {
-                value.value = -Math.abs(value.value);
-                if (setting("wounds-system")) value.value = value.value * -1;                
-                this.changeHP(value, false);
-            }
-            this.clearInput();
-        });
-        html.find('#alwayshp-btn-fullheal').click(ev => {
-            ev.preventDefault();
-            log('set character to fullheal');
-            this.changeHP({ value: 'full' }, false);
-            this.clearInput();
-        }).contextmenu(ev => {
-            ev.preventDefault();
-            log('set character to heal');
-            this.changeHP({ value: 'full' });
-            this.clearInput();
-        });
-
-        if (setting('double-click')) {
-            html.find('#alwayshp-btn-hurt').dblclick(ev => {
-                ev.preventDefault();
-                log('set character to hurt');
-                this.changeHP({ value: 'zero' });
-                this.clearInput();
-            });
-
-            html.find('#alwayshp-btn-heal').dblclick(ev => {
-                ev.preventDefault();
-                log('set character to heal');
-                this.changeHP({ value: 'full' });
-                this.clearInput();
-            });
-        }
-        html.find('#alwayshp-hp').focus(ev => {
-            ev.preventDefault();
-            let elem = ev.target;
-            if (elem.setSelectionRange) {
-                elem.focus();
-                elem.setSelectionRange(0, $(elem).val().length);
-            } else if (elem.createTextRange) {
-                var range = elem.createTextRange();
-                range.collapse(true);
-                range.moveEnd('character', $(elem).val().length);
-                range.moveStart('character', 0);
-                range.select();
-            }
-        }).keypress(ev => {
-            if (ev.which == 13) {
-                let value = this.getValue;
-                if (value.value != '' && value.value != 0) {
-                    ev.preventDefault();
-
-                    let rawvalue = $('#alwayshp-hp', this.element).val();
-
-                    if (setting("wounds-system"))
-                        value.value = (rawvalue.startsWith('+') || (!rawvalue.startsWith('-') && !setting("no-sign-negative")) ? Math.abs(value.value) : -Math.abs(value.value));    
-                    else
-                        value.value = (rawvalue.startsWith('+') || (!rawvalue.startsWith('-') && !setting("no-sign-negative")) ? -Math.abs(value.value) : Math.abs(value.value));
-                    this.changeHP(value); //Heal with a + but everything else is a hurt
-                    this.clearInput();
-                }
-            }
-        });
-
-        html.find('.death-savingthrow').click(ev => {
-            ev.preventDefault();
-            log('add death saving throw');
-            this.addDeathST($(ev.currentTarget).hasClass('save'), 1);
-        }).contextmenu(ev => {
-            ev.preventDefault();
-            log('remove death saving throw');
-            this.addDeathST($(ev.currentTarget).hasClass('save'), -1);
-        });
-
-        
-        html.find('.resource').mousemove(ev => {
-            if (!setting("allow-bar-click"))
-                return;
-            let perc = ev.offsetX / $(ev.currentTarget).width();
-            if (setting("wounds-system"))  perc = 1 - perc;            
-            let change = this.getChangeValue(perc);
-
-            if (setting("wounds-system"))  change = change * -1;      
-            $('.bar-change', html).html(change);
-            log("resource change");
-        }).click(ev => {
-            if (!setting("allow-bar-click"))
-                return;
-            let perc = ev.offsetX / $(ev.currentTarget).width();
-            if (setting("wounds-system"))  perc = 1 - perc;
-            let change = this.getChangeValue(perc);
-
-            this.changeHP({ value: -change, target: 'regular' });
-            $('.bar-change', html).html('');
-        });
-
-        html.find('.bar-change').mousemove(ev => {
-            ev.preventDefault;
-            ev.stopPropagation();
-            log("bar change");
-        });
+    onPersistPosition(position) {
+        game.user.setFlag("always-hp", "alwayshpPos", { left: position.left, top: position.top });
     }
 }
 
@@ -502,9 +530,10 @@ Hooks.on('init', () => {
         hint: 'ALWAYSHP.focus-key.hint',
         editable: [],
         onDown: () => {
-            if (!game.AlwaysHP.app)
-                game.AlwaysHP.app = new AlwaysHP().render(true);
-            else
+            if (!game.AlwaysHP.app) {
+                game.AlwaysHP.app = new AlwaysHP();
+                game.AlwaysHP.app.render(true);
+            } else
                 game.AlwaysHP.app.bringToTop();
             $('#alwayshp-hp', game.AlwaysHP.app.element).focus();
         },
@@ -516,7 +545,8 @@ Hooks.on('init', () => {
             if (show == 'toggle') show = !game.AlwaysHP.app;
 
             if (show && !game.AlwaysHP.app) {
-                game.AlwaysHP.app = new AlwaysHP().render(true);
+                game.AlwaysHP.app = new AlwaysHP();
+                game.AlwaysHP.app.render(true);
             } else if (!show && game.AlwaysHP.app)
                 game.AlwaysHP.app.close({ properClose: true });
         },
@@ -539,21 +569,6 @@ Hooks.on('ready', () => {
 
     if (setting("show-option") == "combat" && game.combats.active && game.combats.active.started && !game.AlwaysHP)
         game.AlwaysHP.toggleApp(true);
-
-    if (!game.modules.get('monks-combat-details')?.active && !game.modules.get('monks-enhanced-journal')?.active && !game.modules.get('monks-common-display')?.active) {
-        patchFunc("Draggable.prototype._onDragMouseUp", async function (wrapped, ...args) {
-            try {
-                if (this.app.constructor._getInheritanceChain) {
-                    for (const cls of this.app.constructor._getInheritanceChain()) {
-                        Hooks.callAll(`dragEnd${cls.name}`, this.app, this.app.position);
-                    }
-                } else {
-                    Hooks.callAll(`dragEnd${this.app.constructor.name}`, this.app, this.app.position);
-                }
-            } catch (e) { }
-            return wrapped(...args);
-        });
-    }
 });
 
 Hooks.on('controlToken', () => {
@@ -589,14 +604,10 @@ Hooks.on('deleteCombat', (combat, data) => {
     }
 });
 
-Hooks.on('dragEndAlwaysHP', (app) => {
-    game.user.setFlag("always-hp", "alwayshpPos", { left: app.position.left, top: app.position.top });
-})
-
 Hooks.on("getSceneControlButtons", (controls) => {
     if (setting("show-option") == 'toggle' && (setting("load-option") == 'everyone' || (setting("load-option") == 'gm' == game.user.isGM))) {
-        let tokenControls = controls.find(control => control.name === "token")
-        tokenControls.tools.push({
+        let tokenControls = controls["tokens"];
+        tokenControls.tools["toggledialog"] = {
             name: "toggledialog",
             title: "ALWAYSHP.toggledialog",
             icon: "fas fa-briefcase-medical",
@@ -606,7 +617,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
                 game.settings.set('always-hp', 'show-dialog', toggled);
                 game.AlwaysHP.toggleApp(toggled);
             }
-        });
+        };
     }
 });
 
