@@ -53,7 +53,7 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
             },
             position: {
                 top: pos?.top || 60,
-                left: pos?.left || (($('#board').width / 2) - 150),
+                left: pos?.left || ($('#board').width() / 2 - 150),
                 width: 300
             }
         }
