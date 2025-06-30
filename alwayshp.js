@@ -78,8 +78,6 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
             .empty()
             .addClass('flexrow')
             .append(header_html);
-
-        this.refreshSelected();
         
         return frame;
     }
@@ -92,6 +90,8 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
 
     _onRender(context, options) {
         super._onRender(context, options);
+
+        this.refreshSelected();
 
         let html = $(this.element);
 
@@ -437,6 +437,8 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     changeToken() {
+        if (!this.element)
+            return;
         $('.character-name', this.element).html(this.tokenname);
         $('.token-stats', this.element).attr('title', this.tokentooltip).html((this.tokentemp ? `<div class="stat temp">${this.tokentemp}</div>` : '') + (this.tokenstat ? `<div class="stat" style="background-color:${this.color}">${this.tokenstat}</div>` : ''));
 
@@ -511,6 +513,10 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
     onPersistPosition(position) {
         game.user.setFlag("always-hp", "alwayshpPos", { left: position.left, top: position.top });
     }
+
+    static canLoad() {
+        return (setting("load-option") == 'everyone' || (setting("load-option") == 'gm' && game.user.isGM) || (setting("load-option") == 'players' && !game.user.isGM));
+    }
 }
 
 Hooks.on('init', () => {
@@ -564,19 +570,19 @@ Hooks.on('ready', () => {
     r.style.setProperty('--ahp-hurt-dark', setting("hurt-dark"));
     r.style.setProperty('--ahp-hurt-light', setting("hurt-light"));
 
-    if ((setting("show-option") == 'on' || (setting("show-option") == 'toggle' && setting("show-dialog"))) && (setting("load-option") == 'everyone' || (setting("load-option") == 'gm' == game.user.isGM)))
+    if ((setting("show-option") == 'on' || (setting("show-option") == 'toggle' && setting("show-dialog"))) && AlwaysHP.canLoad())
         game.AlwaysHP.toggleApp(true);
 
-    if (setting("show-option") == "combat" && game.combats.active && game.combats.active.started && !game.AlwaysHP)
+    if (setting("show-option") == "combat" && AlwaysHP.canLoad() && game.combats.active && game.combats.active.started && !game.AlwaysHP)
         game.AlwaysHP.toggleApp(true);
 });
 
 Hooks.on('controlToken', () => {
-    if (setting("show-option") == "token") {
+    if (setting("show-option") == "token" && AlwaysHP.canLoad()) {
         if (canvas.tokens.controlled.length == 0) // delay a second to make sure we aren't selecting a new token
             window.setTimeout(() => { if (canvas.tokens.controlled.length == 0) game.AlwaysHP.toggleApp(false); }, 100);
         else if (!game.AlwaysHP.app)
-            game.AlwaysHP.toggleApp(true);
+            window.setTimeout(() => { game.AlwaysHP.toggleApp(true); }, 100);
         else
             game.AlwaysHP.refresh();
     } else
@@ -593,19 +599,19 @@ Hooks.on('updateActor', (actor, data) => {
 });
 
 Hooks.on('updateCombat', (combat, data) => {
-    if (setting("show-option") == "combat") {
+    if (setting("show-option") == "combat" && AlwaysHP.canLoad()) {
         game.AlwaysHP.toggleApp(game.combats.active && game.combats.active.started);
     }
 });
 
 Hooks.on('deleteCombat', (combat, data) => {
-    if (setting("show-option") == "combat") {
+    if (setting("show-option") == "combat" && AlwaysHP.canLoad()) {
         game.AlwaysHP.toggleApp(game.combats.active && game.combats.active.started);
     }
 });
 
 Hooks.on("getSceneControlButtons", (controls) => {
-    if (setting("show-option") == 'toggle' && (setting("load-option") == 'everyone' || (setting("load-option") == 'gm' == game.user.isGM))) {
+    if (setting("show-option") == 'toggle' && AlwaysHP.canLoad()) {
         let tokenControls = controls["tokens"];
         tokenControls.tools["toggledialog"] = {
             name: "toggledialog",

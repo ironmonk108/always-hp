@@ -32,7 +32,7 @@
   "ALWAYSHP.clear-after-enter.hint": "Clear the text box after apply damage, uncheck this if you still want to keep the last value entered",
   "ALWAYSHP.show-option.name": "Window Show Options",
   "ALWAYSHP.show-option.hint": "Change how the Always HP window is shown",
-  "ALWAYSHP.load-option.name": "Load Option",
+  "ALWAYSHP.load-option.name": "Player Access Level",
   "ALWAYSHP.allow-bar-click.name": "Allow Bar Click",
   "ALWAYSHP.allow-bar-click.hint": "Hover over and click on the HP bar to alter the attribute",
   "ALWAYSHP.no-sign-negative.name": "No sign means negative",

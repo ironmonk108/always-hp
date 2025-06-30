@@ -1,3 +1,13 @@
+# Version 13.02
+
+Fixed conflict between Tokenbar and Always hp
+
+Fixed window positioning getting stuck when first loading the module
+
+Fixed players being able to view the alwaysHP bar when they shouldn't be able to
+
+Added Italian translations
+
 # Version 13.01
 
 Adding v13 Compatibility
