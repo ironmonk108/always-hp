@@ -32,7 +32,7 @@
   "ALWAYSHP.clear-after-enter.hint": "Svuota la casella di testo dopo aver applicato il danno. Deselezionare se si vuole comunque mantenere l'ultimo valore immesso",
   "ALWAYSHP.show-option.name": "Opzioni Visualizzazione Finestra",
   "ALWAYSHP.show-option.hint": "Cambia come la finestra Always HP è mostrata",
-  "ALWAYSHP.load-option.name": "Opzione Caricamento",
+  "ALWAYSHP.load-option.name": "Livello di Accesso del Giocatore",
   "ALWAYSHP.allow-bar-click.name": "Permetti Clic Barra",
   "ALWAYSHP.allow-bar-click.hint": "Passa il mouse sopra e clicca sulla barra PF per modificare l'attributo",
   "ALWAYSHP.no-sign-negative.name": "Nessun segno significa negativo",
