@@ -43,21 +43,16 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
     valuePct = null;
     tempPct = null;
 
-    static get DEFAULT_OPTIONS() {
-        let pos = game.user.getFlag("always-hp", "alwayshpPos");
-        return {
-            id: "always-hp",
-            classes: ["always-hp"],
-            window: {
-                resizable: false,
-            },
-            position: {
-                top: pos?.top || 60,
-                left: pos?.left || ($('#board').width() / 2 - 150),
-                width: 300
-            }
+    static DEFAULT_OPTIONS = {
+        id: "always-hp",
+        classes: ["always-hp"],
+        window: {
+            resizable: false,
+        },
+        position: {
+            width: 300
         }
-    };
+    }
 
     static PARTS = {
         main: {
@@ -66,8 +61,21 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
         }
     };
 
+    nonDismissible = true;
+
     persistPosition = foundry.utils.debounce(this.onPersistPosition.bind(this), 1000);
 
+    _initializeApplicationOptions(options) {
+        options = super._initializeApplicationOptions(options);
+        if (setting("allow-fade"))
+            options.classes.push("faded-ui");
+
+        let pos = game.user.getFlag("always-hp", "alwayshpPos");
+        options.position.top = pos?.top || 60;
+        options.position.left = pos?.left || ($('#board').width() / 2 - 150);
+
+        return options;
+    }
 
     async _renderFrame(options) {
         const frame = await super._renderFrame(options);
@@ -98,49 +106,49 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
         html.find('#alwayshp-btn-dead').click(ev => {
             ev.preventDefault();
             if (ev.shiftKey == true)
-                this.changeHP({ value: 0 }, 'toggle');
+                this.changeHP(0, null, 'toggle');
             else {
                 log('set character to dead');
-                this.changeHP({ value: 'zero' }, true);
+                this.changeHP('zero', null, true);
                 this.clearInput();
             }
         }).contextmenu(ev => {
             ev.preventDefault();
             log('set character to hurt');
-            this.changeHP({ value: 'zero' });
+            this.changeHP('zero');
             this.clearInput();
         });
         html.find('#alwayshp-btn-hurt').click(ev => {
             ev.preventDefault();
             log('set character to hurt');
-            let value = this.getValue;
-            if (value.value != '') {
-                value.value = Math.abs(value.value);
-                if (setting("wounds-system")) value.value = value.value * -1;
-                this.changeHP(value);
+            let data = this.parseValue;
+            if (data.value != '') {
+                data.value = Math.abs(data.value);
+                if (setting("wounds-system")) data.value = data.value * -1;
+                this.changeHP(data.value, data.target);
             }
             this.clearInput();
         });
         html.find('#alwayshp-btn-heal').click(ev => {
             ev.preventDefault();
             log('set character to heal');
-            let value = this.getValue;
-            if (value.value != '') {
-                value.value = -Math.abs(value.value);
-                if (setting("wounds-system")) value.value = value.value * -1;                
-                this.changeHP(value, false);
+            let data = this.parseValue;
+            if (data.value != '') {
+                data.value = -Math.abs(data.value);
+                if (setting("wounds-system")) data.value = data.value * -1;                
+                this.changeHP(data.value, data.target, false);
             }
             this.clearInput();
         });
         html.find('#alwayshp-btn-fullheal').click(ev => {
             ev.preventDefault();
             log('set character to fullheal');
-            this.changeHP({ value: 'full' }, false);
+            this.changeHP('full', null, false);
             this.clearInput();
         }).contextmenu(ev => {
             ev.preventDefault();
             log('set character to heal');
-            this.changeHP({ value: 'full' });
+            this.changeHP('full');
             this.clearInput();
         });
 
@@ -148,14 +156,14 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
             html.find('#alwayshp-btn-hurt').dblclick(ev => {
                 ev.preventDefault();
                 log('set character to hurt');
-                this.changeHP({ value: 'zero' });
+                this.changeHP('zero');
                 this.clearInput();
             });
 
             html.find('#alwayshp-btn-heal').dblclick(ev => {
                 ev.preventDefault();
                 log('set character to heal');
-                this.changeHP({ value: 'full' });
+                this.changeHP('full');
                 this.clearInput();
             });
         }
@@ -174,17 +182,17 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
             }
         }).keypress(ev => {
             if (ev.which == 13) {
-                let value = this.getValue;
-                if (value.value != '' && value.value != 0) {
+                let data = this.parseValue;
+                if (data.value != '' && data.value != 0) {
                     ev.preventDefault();
 
                     let rawvalue = $('#alwayshp-hp', this.element).val();
 
                     if (setting("wounds-system"))
-                        value.value = (rawvalue.startsWith('+') || (!rawvalue.startsWith('-') && !setting("no-sign-negative")) ? Math.abs(value.value) : -Math.abs(value.value));    
+                        data.value = (rawvalue.startsWith('+') || (!rawvalue.startsWith('-') && !setting("no-sign-negative")) ? Math.abs(data.value) : -Math.abs(data.value));    
                     else
-                        value.value = (rawvalue.startsWith('+') || (!rawvalue.startsWith('-') && !setting("no-sign-negative")) ? -Math.abs(value.value) : Math.abs(value.value));
-                    this.changeHP(value); //Heal with a + but everything else is a hurt
+                        data.value = (rawvalue.startsWith('+') || (!rawvalue.startsWith('-') && !setting("no-sign-negative")) ? -Math.abs(data.value) : Math.abs(data.value));
+                    this.changeHP(data.value, data.target); //Heal with a + but everything else is a hurt
                     this.clearInput();
                 }
             }
@@ -218,7 +226,7 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
             if (setting("wounds-system"))  perc = 1 - perc;
             let change = this.getChangeValue(perc);
 
-            this.changeHP({ value: -change, target: 'regular' });
+            this.changeHP(-change, 'regular');
             $('.bar-change', html).html('');
         });
 
@@ -242,19 +250,13 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
         };
     }
 
-    getResourceValue(resource) {
-        return (resource instanceof Object ? resource.value : resource);
+    getResourceValue(actor, resourceName) {
+        if (resourceName == "" || resourceName.startsWith("."))
+            return 0;
+        return parseInt(foundry.utils.getProperty(actor, `system.${resourceName}`) ?? 0);
     }
 
-    getResourceMax(resource) {
-        return (resource instanceof Object ? resource.max : null);
-    }
-
-    getResValue(resource, property = "value", defvalue = null) {
-        return (resource instanceof Object ? resource[property] : defvalue) ?? 0;
-    }
-
-    async changeHP(value, active) {
+    async changeHP(value = 0, target = null, addStatus = null) {
         if (setting("wounds-system")) {
             switch(value.value) {
                 case 'zero':
@@ -278,78 +280,86 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
 
             let tValue = foundry.utils.duplicate(value);
 
-            let resourcename = (setting("resourcename") || (game.system?.primaryTokenAttribute ?? game.data?.primaryTokenAttribute) || 'attributes.hp');
-            let resource = foundry.utils.getProperty(a, `system.${resourcename}`);
+            let resourceValue = this.getResourceValue(a, setting("resourcename"));
 
-            if (tValue.value == 'zero')
-                tValue.value = this.getResValue(resource, "value", resource) + this.getResValue(resource, "temp");
-            if (value.value == 'full')
-                tValue.value = (resource instanceof Object ? resource.value - resource.max : resource);
+            // If setting to zero or full, calculate the actual value
+            if (value == 'zero') {
+                let tempValue = this.getResourceValue(a, setting("tempresource"));
+                tValue = resourceValue + tempValue;
+            }
+            else if (value == 'full') {
+                let maxValue = this.getResourceValue(a, setting("maxresource"));
+                tValue = resourceValue - maxValue;
+            }
 
             let defeatedStatus = CONFIG.specialStatusEffects.DEFEATED;
 
-            if (active != undefined && setting("add-defeated")) {
+            // Apply defeated status if applicable
+            if (addStatus != null && setting("add-defeated")) {
                 let status = CONFIG.statusEffects.find(e => e.id === defeatedStatus);
-                let effect = game.system.id == "pf2e" ? game.settings.get("pf2e", "deathIcon") : a && status ? status : CONFIG.controlIcons.defeated;
+                let effect = game.system.id == "pf2e" ? status : a && status ? status : CONFIG.controlIcons.defeated;
 
                 const exists = a.statuses.has(effect.id);
 
-                if (exists != active)
-                    await a.toggleStatusEffect(effect.id, { active: (active == 'toggle' ? !exists : active) });
+                if (exists != addStatus)
+                    await a.toggleStatusEffect(effect.id ?? effect, { active: (addStatus == 'toggle' ? !exists : addStatus) });
             }
 
-            if (active === false && setting("clear-savingthrows")) {
+            // Clear death saves if applicable
+            if (addStatus === false && setting("clear-savingthrows")) {
                 a.update({
                     "system.attributes.death.failure": 0,
                     "system.attributes.death.success": 0
                 });
             }
 
-            log('applying damage', a, tValue);
+            log('applying damage', a, tValue, target);
+            // Apply the damage/heal if not zero
             if (tValue.value != 0) {
-                await this.applyDamage(a, tValue);
+                await this.applyDamage(a, tValue, target);
             }
         };
 
         this.refreshSelected();
     }
 
-    async applyDamage(actor, amount, multiplier = 1) {
-        let { value, target } = amount;
+    async applyDamage(actor, value, target) {
         let updates = {};
-        let resourcename = (setting("resourcename") || (game.system?.primaryTokenAttribute ?? game.data?.primaryTokenAttribute) || 'attributes.hp');
-        let resource = foundry.utils.getProperty(actor, `system.${resourcename}`);
-        if (resource instanceof Object) {
-            value = Math.floor(parseInt(value) * multiplier);
+        let resourceValue = this.getResourceValue(actor, setting("resourcename"));
+        let tempValue = this.getResourceValue(actor, setting("tempresource"));
+        let maxValue = this.getResourceValue(actor, setting("maxresource"));
+        let tempMaxValue = this.getResourceValue(actor, setting("tempmaxresource"));
 
-            // Deduct damage from temp HP first
-            if (resource.hasOwnProperty("tempmax") && target == "max") {
-                const dm = (resource.tempmax ?? 0) - value;
-                updates[`system.${resourcename}.tempmax`] = dm;
-            } else {
-                let dt = 0;
-                let tmpMax = 0;
-                if (resource.hasOwnProperty("temp")) {
-                    const tmp = parseInt(resource.temp) || 0;
-                    dt = (value > 0 || target == 'temp') && target != 'regular' && target != 'max' ? Math.min(tmp, value) : 0;
-                    // Remaining goes to health
 
-                    tmpMax = parseInt(resource.tempmax) || 0;
+        // Deduct damage from temp HP first
+        if (tempMaxValue && target == "max") {
+            const dm = tempMaxValue - value;
+            updates[`system.${setting("tempmaxresource")}`] = dm;
+        } else {
+            let dt = 0;
+            let tmpMax = 0;
+            if (tempValue || target == 'temp') {
+                dt = (value > 0 || target == 'temp') && target != 'regular' && target != 'max' ? Math.min(tempValue, value) : 0;
+                // Remaining goes to health
 
-                    updates[`system.${resourcename}.temp`] = tmp - dt;
-                }
+                tmpMax = tempMaxValue
 
-                // Update the Actor
-                if (target != 'temp' && target != 'max' && dt >= 0) {
-                    let change = (value - dt);
-                    const dh = Math.clamp(resource.value - change, (game.system.id == 'D35E' || game.system.id == 'pf1' ? -2000 : 0), resource.max + tmpMax);
-                    updates[`system.${resourcename}.value`] = dh;
-                }
+                updates[`system.${setting("tempresource")}`] = tempValue - dt;
             }
+
+            // Update the Actor
+            if (target != 'temp' && target != 'max' && dt >= 0) {
+                let change = (value - dt);
+                const dh = Math.clamp(resourceValue - change, (setting("allow-negative") ? -2000 : 0), maxValue + tmpMax);
+                updates[`system.${setting("resourcename") }`] = dh;
+            }
+        }
+            /*
         } else {
             let val = Math.floor(parseInt(resource));
             updates[`system.${resourcename}`] = (val - value);
         }
+        */
 
         return await actor.update(updates);
     }
@@ -384,22 +394,20 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
                 this.tokenname = "";
             else {
                 $('.character-name', this.element).addClass("single");
-                let resourcename = setting("resourcename");
-                let resource = foundry.utils.getProperty(a, `system.${resourcename}`);
+                let resourceValue = this.getResourceValue(a, setting("resourcename"));
 
-                let value = this.getResValue(resource, "value", resource);
-                let max = this.getResValue(resource, "max");
-                if (setting("wounds-system")) value =  max - value;
-                let temp = this.getResValue(resource, "temp");
-                let tempmax = this.getResValue(resource, "tempmax");
+                let maxValue = this.getResourceValue(a, setting("maxresource"));
+                if (setting("wounds-system")) resourceValue = maxValue - resourceValue;
+                let tempValue = this.getResourceValue(a, setting("tempresource"));
+                let tempMaxValue = this.getResourceValue(a, setting("tempmaxresource"));
 
                 // Differentiate between effective maximum and displayed maximum
-                const effectiveMax = Math.max(0, max + tempmax);
-                let displayMax = max + (tempmax > 0 ? tempmax : 0);
+                const effectiveMax = Math.max(0, maxValue + tempMaxValue);
+                let displayMax = maxValue + (tempMaxValue > 0 ? tempMaxValue : 0);
 
                 // Allocate percentages of the total
-                const tempPct = Math.clamp(temp, 0, displayMax) / displayMax;
-                const valuePct = Math.clamp(value, 0, effectiveMax) / displayMax;
+                const tempPct = Math.clamp(tempValue, 0, displayMax) / displayMax;
+                const valuePct = Math.clamp(resourceValue, 0, effectiveMax) / displayMax;
 
                 this.valuePct = valuePct;
                 this.tempPct = tempPct;
@@ -407,9 +415,9 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
                 this.color = `rgba(${parseInt(color[0] * 255)},${parseInt(color[1] * 255)},${parseInt(color[2] * 255)}, 0.7)`;
 
                 this.tokenname = canvas.tokens.controlled[0]?.name ?? canvas.tokens.controlled[0]?.data?.name;
-                this.tokenstat = value;
-                this.tokentemp = temp;
-                this.tokentooltip = `HP: ${value}, Temp: ${temp}, Max: ${max}`;
+                this.tokenstat = resourceValue;
+                this.tokentemp = tempValue;
+                this.tokentooltip = `HP: ${resourceValue}, Temp: ${tempValue}, Max: ${maxValue}`;
             }
         }
         else {
@@ -458,7 +466,7 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
         }
     }
 
-    get getValue() {
+    get parseValue() {
         let value = $('#alwayshp-hp', this.element).val();
         let result = { value: value };
         if (value.indexOf("r") > -1 || value.indexOf("R") > -1) {
@@ -493,17 +501,16 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
             if (!actor)
                 return;
 
-            let resourcename = (setting("resourcename") || (game.system.primaryTokenAttribute ?? game.system.data.primaryTokenAttribute) || 'attributes.hp');
-            let resource = foundry.utils.getProperty(actor, `system.${resourcename}`);
+            let resourceValue = this.getResourceValue(actor, setting("resourcename"));
+            let maxValue = this.getResourceValue(actor, setting("maxresource"));
 
-            if (resource.hasOwnProperty("max")) {
-                let max = this.getResValue(resource, "max");
-                let tempmax = this.getResValue(resource, "tempmax");
-                const effectiveMax = Math.max(0, max + tempmax);
+            if (maxValue) {
+                let tempMaxValue = this.getResourceValue(a, setting("tempmaxresource"));
+                const effectiveMax = Math.max(0, maxValue + tempMaxValue);
                 let val = Math.floor(parseInt(effectiveMax * perc));
                 if (val >= 0)
                     val++;
-                change = val - Math.floor(parseInt(resource.value));
+                change = val - Math.floor(parseInt(resourceValue));
             }
         }
 
@@ -561,6 +568,62 @@ Hooks.on('init', () => {
                 game.AlwaysHP.app.refreshSelected();
         }
     };
+
+    if (!game.modules.get("monks-active-tiles")?.active) {
+        patchFunc("foundry.helpers.interaction.ClientKeybindings.prototype._registerCoreKeybindings", function (wrapped, ...args) {
+            let result = wrapped(...args);
+
+            game.keybindings.actions.get("core.dismiss").onDown = async function (context) {
+                // Cancel current drag workflow
+                if (canvas.currentMouseManager) {
+                    canvas.currentMouseManager.interactionData.cancelled = true;
+                    canvas.currentMouseManager.cancel();
+                    return true;
+                }
+
+                // Save fog of war if there are pending changes
+                if (canvas.ready) canvas.fog.commit();
+
+                // Case 1 - dismiss an open context menu
+                if (ui.context?.element) {
+                    await ui.context.close();
+                    return true;
+                }
+
+                // Case 2 - dismiss an open Tour
+                if (foundry.nue.Tour.tourInProgress) {
+                    foundry.nue.Tour.activeTour.exit();
+                    return true;
+                }
+
+                // Case 3 - close open UI windows
+                const closingApps = [];
+                for (const app of Object.values(ui.windows)) {
+                    closingApps.push(app.close({ closeKey: true }).then(() => !app.rendered));
+                }
+                for (const app of foundry.applications.instances.values()) {
+                    if (app.hasFrame && !app.nonDismissible) closingApps.push(app.close({ closeKey: true }).then(() => !app.rendered));
+                }
+                const closedApp = (await Promise.all(closingApps)).some(c => c); // Confirm an application actually closed
+                if (closedApp) return true;
+
+                // Case 4 (GM) - release controlled objects (if not in a preview)
+                if (game.view !== "game") return;
+                const layer = canvas.activeLayer;
+                if (layer instanceof foundry.canvas.layers.InteractionLayer) {
+                    if (layer._onDismissKey(context.event)) return true;
+                }
+
+                // Case 5 - toggle the main menu
+                ui.menu.toggle();
+                // Save the fog immediately rather than waiting for the 3s debounced save as part of commitFog.
+                if (canvas.ready) await canvas.fog.save();
+                return true;
+            }
+
+            return result
+        });
+    }
 });
 
 Hooks.on('ready', () => {
@@ -612,8 +675,8 @@ Hooks.on('deleteCombat', (combat, data) => {
 
 Hooks.on("getSceneControlButtons", (controls) => {
     if (setting("show-option") == 'toggle' && AlwaysHP.canLoad()) {
-        let tokenControls = controls["tokens"];
-        tokenControls.tools["toggledialog"] = {
+        let tokenControls = controls.tokens;
+        tokenControls.tools.toggledialog = {
             name: "toggledialog",
             title: "ALWAYSHP.toggledialog",
             icon: "fas fa-briefcase-medical",

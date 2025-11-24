@@ -17,6 +17,26 @@ export const registerSettings = function () {
         'players': game.i18n.localize("ALWAYSHP.players"),
     };
 
+    let getSystemBaseResource = () => {
+        return (game.system.primaryTokenAttribute ?? game.system.data?.primaryTokenAttribute) || 'attributes.hp';
+    }
+
+    let getSystemResourceName = () => {
+        return getSystemBaseResource() + ".value"
+    }
+
+    let getSystemTempName = () => {
+        return getSystemBaseResource() + ".temp"
+    }
+
+    let getSystemMaxName = () => {
+        return getSystemBaseResource() + ".max"
+    }
+
+    let getSystemTempMaxName = () => {
+        return getSystemBaseResource() + ".tempmax"
+    }
+
     game.settings.register(modulename, "load-option", {
         name: game.i18n.localize("ALWAYSHP.load-option.name"),
         scope: "world",
@@ -49,8 +69,44 @@ export const registerSettings = function () {
         name: i18n("ALWAYSHP.resourcename.name"),
         hint: i18n("ALWAYSHP.resourcename.hint"),
         scope: "world",
-        default: (game.system.primaryTokenAttribute ?? game.system.data?.primaryTokenAttribute)  || 'attributes.hp',
+        default: getSystemResourceName(),
         type: String,
+        config: true
+    });
+
+    game.settings.register(modulename, "tempresource", {
+        name: i18n("ALWAYSHP.tempresource.name"),
+        hint: i18n("ALWAYSHP.tempresource.hint"),
+        scope: "world",
+        default: getSystemTempName(),
+        type: String,
+        config: true
+    });
+
+    game.settings.register(modulename, "maxresource", {
+        name: i18n("ALWAYSHP.maxresource.name"),
+        hint: i18n("ALWAYSHP.maxresource.hint"),
+        scope: "world",
+        default: getSystemMaxName(),
+        type: String,
+        config: true
+    });
+
+    game.settings.register(modulename, "tempmaxresource", {
+        name: i18n("ALWAYSHP.tempmaxresource.name"),
+        hint: i18n("ALWAYSHP.tempmaxresource.hint"),
+        scope: "world",
+        default: getSystemTempMaxName(),
+        type: String,
+        config: true
+    });
+
+    game.settings.register(modulename, "allow-negative", {
+        name: i18n("ALWAYSHP.allow-negative.name"),
+        hint: i18n("ALWAYSHP.allow-negative.hint"),
+        scope: "world",
+        default: ['D35E', 'pf1', 'dc20rpg'].includes(game.system.id),
+        type: Boolean,
         config: true
     });
 
@@ -161,6 +217,16 @@ export const registerSettings = function () {
             let r = document.querySelector(':root');
             r.style.setProperty('--ahp-hurt-dark', value || '#ff0000');
         },
+    });
+
+    game.settings.register(modulename, "allow-fade", {
+        name: i18n("ALWAYSHP.allow-fade.name"),
+        hint: i18n("ALWAYSHP.allow-fade.hint"),
+        scope: "client",
+        config: true,
+        default: false,
+        type: Boolean,
+        requiresReload: true
     });
 
     game.settings.register(modulename, "hurt-light", {

@@ -1,3 +1,17 @@
+# Version 13.03
+
+Fixed issue with the Escape key closing the Always HP window
+
+Fixed issue with default positioning of the window
+
+Fixed background of the window
+
+Added the option to allow the window to fade with the rest of the Foundry windows
+
+Changed how the primary resource is dealt with.  This is to provide for better flexibility between system.  And allows for the resource value, temporary value, and maximum values to be set properly and not rely on an assumed naming convention.
+
+Added the option for the system to use negative values.
+
 # Version 13.02
 
 Fixed conflict between Tokenbar and Always hp

@@ -18,6 +18,14 @@
 
   "ALWAYSHP.resourcename.name": "Resource to change",
   "ALWAYSHP.resourcename.hint": "Most systems use attributes.hp, but if the system you use doesn't, or if you'd rather use a different property, you can set it here.",
+  "ALWAYSHP.tempresource.name": "Temporary Resource",
+  "ALWAYSHP.tempresource.hint": "If you system uses temporary hit points, set the property here.",
+  "ALWAYSHP.maxresource.name": "Max Resource",
+  "ALWAYSHP.maxresource.hint": "Set for the maximum resource property, if different from the default.",
+  "ALWAYSHP.tempmaxresource.name": "Temporary Max Resource",
+  "ALWAYSHP.tempmaxresource.hint": "If your system uses temporary hit points with a maximum value, set the property here.",
+  "ALWAYSHP.allow-negative.name": "Allow Negative HP",
+  "ALWAYSHP.allow-negative.hint": "Allow HP to go below zero",
   "ALWAYSHP.add-defeated.name": "Set defeated status on zero HP",
   "ALWAYSHP.add-defeated.hint": "When pressing the button(skull) to drop the HP to zero, also set the defeated status",
   "ALWAYSHP.show-dialog.name": "Show the Window",
@@ -49,6 +57,8 @@
   "ALWAYSHP.hurt-color.hint": "Color of the hurt buttons, foreground and background",
   "ALWAYSHP.focus-key.name": "Focus Key",
   "ALWAYSHP.focus-key.hint": "Focus on the Always HP input field",
+  "ALWAYSHP.allow-fade.name": "Allow Fade",
+  "ALWAYSHP.allow-fade.hint": "Allow the dialog to use the UI fade effect",
 
   "ALWAYSHP.DeathSavingThrowFail": "Death Savingthrow, Fail",
   "ALWAYSHP.DeathSavingThrowPass": "Death Savingthrow, Pass"

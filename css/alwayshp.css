@@ -5,6 +5,10 @@
     --ahp-hurt-dark: #ff0000;
 }
 
+#always-hp {
+    background: var(--color-cool-5-90);
+}
+
 #alwayshp-container {
     height: auto;
     width: 300px;

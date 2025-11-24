@@ -1,7 +1,7 @@
 {
   "title": "Always HP",
   "description": "We're always updating HP, add a window to make it easier to adjust that",
-  "version": "13.02",
+  "version": "13.03",
   "authors": [
     {
       "name": "IronMonk",
@@ -52,7 +52,7 @@
     "css/alwayshp.css"
   ],
   "url": "https://github.com/ironmonk108/always-hp",
-  "download": "https://github.com/ironmonk108/always-hp/archive/13.02.zip",
+  "download": "https://github.com/ironmonk108/always-hp/archive/13.03.zip",
   "manifest": "https://github.com/ironmonk108/always-hp/releases/latest/download/module.json",
   "bugs": "https://github.com/ironmonk108/always-hp/issues",
   "id": "always-hp",
