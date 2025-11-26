@@ -324,12 +324,111 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     async applyDamage(actor, value, target) {
+        // PF2e-specific handling to avoid data preparation errors with synthetic actors
+        if (game.system.id === "pf2e") {
+            try {
+                return await this.applyDamagePF2e(actor, value, target);
+            } catch (e) {
+                error("PF2e damage application failed", e);
+                // Fall through to generic handler
+            }
+        }
+
+        // Generic/fallback damage application
+        return await this.applyDamageGeneric(actor, value, target);
+    }
+
+    /**
+     * PF2e-specific damage application that properly handles synthetic actors
+     * Uses the base actor for updates when dealing with unlinked tokens
+     */
+    async applyDamagePF2e(actor, value, target) {
+        let updates = {};
+        
+        // Get current values
+        const hp = actor.system.attributes?.hp;
+        if (!hp) {
+            warn("Actor has no HP attribute, falling back to generic handler");
+            return await this.applyDamageGeneric(actor, value, target);
+        }
+
+        const currentValue = hp.value ?? 0;
+        const currentTemp = hp.temp ?? 0;
+        const maxValue = hp.max ?? 0;
+        
+        if (target === "max") {
+            // Modifying max HP
+            const newMax = maxValue - value;
+            updates["system.attributes.hp.max"] = newMax;
+        } else if (target === "temp") {
+            // Modifying temp HP only
+            const newTemp = Math.max(0, currentTemp - value);
+            updates["system.attributes.hp.temp"] = newTemp;
+        } else {
+            // Standard damage/healing
+            let tempDamage = 0;
+            let hpDamage = value;
+            
+            // For damage (positive value), apply to temp HP first
+            if (value > 0 && target !== 'regular' && currentTemp > 0) {
+                tempDamage = Math.min(currentTemp, value);
+                hpDamage = value - tempDamage;
+                updates["system.attributes.hp.temp"] = currentTemp - tempDamage;
+            }
+            
+            // Apply remaining to regular HP
+            if (target !== 'temp' && hpDamage !== 0) {
+                const minHP = setting("allow-negative") ? -2000 : 0;
+                const newHP = Math.clamp(currentValue - hpDamage, minHP, maxValue);
+                updates["system.attributes.hp.value"] = newHP;
+            }
+        }
+
+        // Check if this is a synthetic (unlinked token) actor
+        const isSynthetic = actor.isToken && !actor.prototypeToken?.actorLink;
+        
+        if (isSynthetic && actor.token) {
+            // For synthetic actors, update through the token's actor delta
+            // This avoids triggering full actor re-preparation that can fail
+            try {
+                return await actor.token.update({
+                    "delta.system.attributes.hp": foundry.utils.mergeObject(
+                        foundry.utils.duplicate(hp),
+                        this.extractHPUpdates(updates)
+                    )
+                });
+            } catch (deltaError) {
+                warn("Token delta update failed, trying direct actor update", deltaError);
+            }
+        }
+        
+        // Standard update for linked actors or if delta update failed
+        return await actor.update(updates);
+    }
+
+    /**
+     * Extract HP-specific updates from the full updates object
+     */
+    extractHPUpdates(updates) {
+        const hpUpdates = {};
+        for (const [key, value] of Object.entries(updates)) {
+            if (key.startsWith("system.attributes.hp.")) {
+                const hpKey = key.replace("system.attributes.hp.", "");
+                hpUpdates[hpKey] = value;
+            }
+        }
+        return hpUpdates;
+    }
+
+    /**
+     * Generic damage application for non-PF2e systems
+     */
+    async applyDamageGeneric(actor, value, target) {
         let updates = {};
         let resourceValue = this.getResourceValue(actor, setting("resourcename"));
         let tempValue = this.getResourceValue(actor, setting("tempresource"));
         let maxValue = this.getResourceValue(actor, setting("maxresource"));
         let tempMaxValue = this.getResourceValue(actor, setting("tempmaxresource"));
-
 
         // Deduct damage from temp HP first
         if (tempMaxValue && target == "max") {
@@ -354,31 +453,9 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
                 updates[`system.${setting("resourcename") }`] = dh;
             }
         }
-            /*
-        } else {
-            let val = Math.floor(parseInt(resource));
-            updates[`system.${resourcename}`] = (val - value);
-        }
-        */
 
         return await actor.update(updates);
     }
-
-    /*
-    sendMessage(dh, dt) {
-        const speaker = ChatMessage.getSpeaker({ user: game.user.id });
-
-        let messageData = {
-            user: game.user.id,
-            speaker: speaker,
-            type: CONST.CHAT_MESSAGE_TYPES.OTHER,
-            whisper: ChatMessage.getWhisperRecipients("GM").map(u => u.id),
-            content: `${actor.name} has changed HP by: ${dt + dh}` + (dt != 0 ? `<small><br/>Temporary: ${dt}<br/>HP: ${dh}</small>` : '')
-        };
-
-        ChatMessage.create(messageData);
-    }
-    */
 
     refreshSelected() {
         this.valuePct = null;
@@ -505,7 +582,7 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
             let maxValue = this.getResourceValue(actor, setting("maxresource"));
 
             if (maxValue) {
-                let tempMaxValue = this.getResourceValue(a, setting("tempmaxresource"));
+                let tempMaxValue = this.getResourceValue(actor, setting("tempmaxresource"));
                 const effectiveMax = Math.max(0, maxValue + tempMaxValue);
                 let val = Math.floor(parseInt(effectiveMax * perc));
                 if (val >= 0)
