@@ -1,3 +1,7 @@
+# Version 13.04
+
+Fixed an issue if players had customised the resource value to an invalid value
+
 # Version 13.03
 
 Fixed issue with the Escape key closing the Always HP window

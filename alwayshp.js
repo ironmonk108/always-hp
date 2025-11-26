@@ -626,7 +626,20 @@ Hooks.on('init', () => {
     }
 });
 
-Hooks.on('ready', () => {
+Hooks.on('ready', async () => {
+    if (["dnd5e", "pf2e", "sw5e"].includes(game.system.id) && setting("resourcename") == "attributes.hp") {
+        game.settings.set("always-hp", "resourcename", "attributes.hp.value");
+
+        for (let i = 0; i < game.actors.contents.length; i++) {
+            let actor = game.actors.contents[i];
+            let hp = foundry.utils.getProperty(actor, "system.attributes.hp");
+            if ((typeof hp !== "object" || hp === null) && hp !== undefined) {
+                console.log(`always-hp | Fixing actor ${actor.name} HP data structure: ${hp}`);
+                await actor.update({ "system.attributes.hp": { value: 1 } }, { allowHPOverage: 1 });
+            }
+        }
+    }
+
     let r = document.querySelector(':root');
     r.style.setProperty('--ahp-heal-dark', setting("heal-dark"));
     r.style.setProperty('--ahp-heal-light', setting("heal-light"));
