@@ -18,6 +18,14 @@
 
   "ALWAYSHP.resourcename.name": "Risorsa da cambiare",
   "ALWAYSHP.resourcename.hint": "La maggior parte dei sistemi utilizza attributes.hp, ma se il sistema che usi non lo fa, o se preferisci utilizzare una proprietà diversa, puoi impostarla qui.",
+  "ALWAYSHP.tempresource.name": "Risorsa Temporanea",
+  "ALWAYSHP.tempresource.hint": "Se il sistema utilizza punti ferita temporanei, impostare la proprietà qui.",
+  "ALWAYSHP.maxresource.name": "Risorsa Massima",
+  "ALWAYSHP.maxresource.hint": "Impostato per la proprietà della risorsa massima, se diversa da quella predefinita.",
+  "ALWAYSHP.tempmaxresource.name": "Risorsa Massima Temporanea",
+  "ALWAYSHP.tempmaxresource.hint": "Se il sistema utilizza punti ferita temporanei con un valore massimo, impostare la proprietà qui.",
+  "ALWAYSHP.allow-negative.name": "Permetti PF Negativi",
+  "ALWAYSHP.allow-negative.hint": "Consentire ai PF di scendere sotto lo zero",
   "ALWAYSHP.add-defeated.name": "Imposta lo stato sconfitto a zero PF",
   "ALWAYSHP.add-defeated.hint": "Quando premi il pulsante (teschio) per portare i PF a zero, imposta anche lo stato sconfitto",
   "ALWAYSHP.show-dialog.name": "Mostra la finestra",
@@ -49,6 +57,8 @@
   "ALWAYSHP.hurt-color.hint": "Colore dei pulsanti ferite, primo piano e sfondo",
   "ALWAYSHP.focus-key.name": "Tasto Focus",
   "ALWAYSHP.focus-key.hint": "Focus sul campo input Always HP",
+  "ALWAYSHP.allow-fade.name": "Consenti Dissolvenza",
+  "ALWAYSHP.allow-fade.hint": "Consenti alla finestra di dialogo di utilizzare l'effetto dissolvenza dell'interfaccia utente",
 
   "ALWAYSHP.DeathSavingThrowFail": "Tiro Salvezza Morte, Fallito",
   "ALWAYSHP.DeathSavingThrowPass": "Tiro Salvezza Morte, Superato"
