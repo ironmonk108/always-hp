@@ -296,13 +296,18 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
 
             // Apply defeated status if applicable
             if (addStatus != null && setting("add-defeated")) {
-                let status = CONFIG.statusEffects.find(e => e.id === defeatedStatus);
+                let status = Array.isArray(CONFIG.statusEffects) ? CONFIG.statusEffects.find(e => e.id === defeatedStatus) : CONFIG.statusEffects[defeatedStatus];
                 let effect = game.system.id == "pf2e" ? status : a && status ? status : CONFIG.controlIcons.defeated;
 
                 const exists = a.statuses.has(effect.id);
 
-                if (exists != addStatus)
-                    await a.toggleStatusEffect(effect.id ?? effect, { active: (addStatus == 'toggle' ? !exists : addStatus) });
+                if (exists != addStatus) {
+                    let effectId = effect.id ?? effect;
+                    if (CONFIG.statusEffects[effectId] == null && Array.isArray(CONFIG.statusEffects)) {
+                        effectId = CONFIG.statusEffects.findIndex(e => e.id === defeatedStatus);
+                    }
+                    await a.toggleStatusEffect(effectId, { active: (addStatus == 'toggle' ? !exists : addStatus) });
+                }
             }
 
             // Clear death saves if applicable
@@ -627,7 +632,7 @@ Hooks.on('init', () => {
 });
 
 Hooks.on('ready', async () => {
-    if (["dnd5e", "pf2e", "sw5e"].includes(game.system.id) && setting("resourcename") == "attributes.hp") {
+    if (["dnd5e", "pf2e", "sw5e", "pf1"].includes(game.system.id) && setting("resourcename") == "attributes.hp") {
         game.settings.set("always-hp", "resourcename", "attributes.hp.value");
 
         for (let i = 0; i < game.actors.contents.length; i++) {
@@ -636,6 +641,19 @@ Hooks.on('ready', async () => {
             if ((typeof hp !== "object" || hp === null) && hp !== undefined) {
                 console.log(`always-hp | Fixing actor ${actor.name} HP data structure: ${hp}`);
                 await actor.update({ "system.attributes.hp": { value: 1 } }, { allowHPOverage: 1 });
+            }
+        }
+    }
+
+    if (["CoC7"].includes(game.system.id) && setting("resourcename") == "attribs.hp") {
+        game.settings.set("always-hp", "resourcename", "attribs.hp.value");
+
+        for (let i = 0; i < game.actors.contents.length; i++) {
+            let actor = game.actors.contents[i];
+            let hp = foundry.utils.getProperty(actor, "system.attribs.hp");
+            if ((typeof hp !== "object" || hp === null) && hp !== undefined) {
+                console.log(`always-hp | Fixing actor ${actor.name} HP data structure: ${hp}`);
+                await actor.update({ "system.attribs.hp": { value: 1 } }, { allowHPOverage: 1 });
             }
         }
     }

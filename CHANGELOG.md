@@ -1,6 +1,16 @@
+# Version 14.01
+
+v14 Compatibility
+
+Fixed issues when not able to find defeated status
+
+Added pf1 to list of systems to correct if users saved an improper resource name
+
+Added CoC7 function to correct  if users saved an improper resource name
+
 # Version 13.04
 
-Fixed an issue if players had customised the resource value to an invalid value
+Fixed an issue if players had customized the resource value to an invalid value
 
 # Version 13.03
 
