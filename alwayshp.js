@@ -258,12 +258,12 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
 
     async changeHP(value = 0, target = null, addStatus = null) {
         if (setting("wounds-system")) {
-            switch(value.value) {
+            switch(value) {
                 case 'zero':
-                    value.value = 'full';
+                    value = 'full';
                     break;
                 case 'full':
-                    value.value = 'zero';
+                    value = 'zero';
                     break;
                 }
         }
