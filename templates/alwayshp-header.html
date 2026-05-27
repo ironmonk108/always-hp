@@ -2,6 +2,11 @@
 <div class="token-stats flexrow" title="{{tokentooltip}}">
     <div class="stat"></div>
 </div>
+{{#if (always-hp 'lock-enabled')}}
+<div id="alwayshp-btn-lock" class="alwayshp-btn lock" title="{{localize 'ALWAYSHP.toggleLock'}}">
+    <i class="fas fa-lock-open"></i>
+</div>
+{{/if}}
 <div class="resource" style="display:none;">
     <div class="bar"></div>
     <div class="bar-change noselect"></div>
