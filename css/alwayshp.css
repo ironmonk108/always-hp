@@ -292,3 +292,42 @@
 .system-dsa5 #always-hp .alwayshp-content {
     padding-top: 30px;
 }
+
+#alwayshp-btn-lock {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    cursor: pointer;
+}
+
+#always-hp.locked {
+    transition: none !important;
+}
+
+#always-hp.locked-topLeft {
+    top: var(--always-hp-lock-y, 60px) !important;
+    left: var(--always-hp-lock-x, 10px) !important;
+}
+
+#always-hp.locked-topRight {
+    top: var(--always-hp-lock-y, 60px) !important;
+    left: unset !important;
+    right: var(--always-hp-lock-x, 10px) !important;
+}
+
+#always-hp.locked-bottomLeft {
+    top: unset !important;
+    bottom: var(--always-hp-lock-y, 10px) !important;
+    left: var(--always-hp-lock-x, 10px) !important;
+}
+
+#always-hp.locked-bottomRight {
+    top: unset !important;
+    bottom: var(--always-hp-lock-y, 10px) !important;
+    left: unset !important;
+    right: var(--always-hp-lock-x, 10px) !important;
+}
+
+#always-hp .alwayshp-btn.locked {
+    color: #ff6400;
+}
