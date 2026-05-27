@@ -3,6 +3,13 @@ import { i18n, setting } from "./alwayshp.js";
 export const registerSettings = function () {
     let modulename = "always-hp";
 
+    let positionoptions = {
+        'topLeft': game.i18n.localize("ALWAYSHP.top-left"),
+        'topRight': game.i18n.localize("ALWAYSHP.top-right"),
+        'bottomLeft': game.i18n.localize("ALWAYSHP.bottom-left"),
+        'bottomRight': game.i18n.localize("ALWAYSHP.bottom-right"),
+    };
+
     let showoptions = {
         'on': game.i18n.localize("ALWAYSHP.alwaysshow"),
         'off': game.i18n.localize("ALWAYSHP.dontshow"),
@@ -261,4 +268,25 @@ export const registerSettings = function () {
             config: false
         });
     //}
+
+
+        game.settings.register(modulename, "positioning", {
+        name: i18n("ALWAYSHP.position.name"),
+        hint: i18n("ALWAYSHP.position.hint"),
+        scope: "client",
+        config: true,
+        default: "topLeft",
+        type: String,
+        choices: positionoptions,
+    });
+
+    game.settings.register(modulename, "lock-enabled", {
+        name: i18n("ALWAYSHP.lock-enabled.name"),
+        hint: i18n("ALWAYSHP.lock-enabled.hint"),
+        scope: "client",
+        default: false,
+        type: Boolean,
+        config: true,
+        requiresReload: true
+    });
 }

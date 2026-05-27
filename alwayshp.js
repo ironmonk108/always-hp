@@ -74,6 +74,12 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
         options.position.top = pos?.top || 60;
         options.position.left = pos?.left || ($('#board').width() / 2 - 150);
 
+        if (pos?.locked) {
+            const mode = setting("positioning");
+            options.classes.push(`locked-${mode}`);
+            options.classes.push(`locked`);
+        }
+
         return options;
     }
 
@@ -86,7 +92,7 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
             .empty()
             .addClass('flexrow')
             .append(header_html);
-        
+
         return frame;
     }
 
@@ -102,6 +108,21 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
         this.refreshSelected();
 
         let html = $(this.element);
+
+        let pos = game.user.getFlag("always-hp", "alwayshpPos");
+        if (pos?.locked) {
+            html.find('#alwayshp-btn-lock').addClass('locked').find('i').removeClass('fa-lock-open').addClass('fa-lock');
+            this.element.style.setProperty('--always-hp-lock-x', `${pos.offsetX}px`);
+            this.element.style.setProperty('--always-hp-lock-y', `${pos.offsetY}px`);
+        } else {
+            // Ensure classes are removed if they were added in _initializeApplicationOptions but state changed
+            this.element.classList.remove('locked-topLeft', 'locked-topRight', 'locked-bottomLeft', 'locked-bottomRight', 'locked');
+        }
+
+        html.find('#alwayshp-btn-lock').click(ev => {
+            ev.preventDefault();
+            this.toggleLock();
+        });
 
         html.find('#alwayshp-btn-dead').click(ev => {
             ev.preventDefault();
@@ -135,7 +156,7 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
             let data = this.parseValue;
             if (data.value != '') {
                 data.value = -Math.abs(data.value);
-                if (setting("wounds-system")) data.value = data.value * -1;                
+                if (setting("wounds-system")) data.value = data.value * -1;
                 this.changeHP(data.value, data.target, false);
             }
             this.clearInput();
@@ -189,7 +210,7 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
                     let rawvalue = $('#alwayshp-hp', this.element).val();
 
                     if (setting("wounds-system"))
-                        data.value = (rawvalue.startsWith('+') || (!rawvalue.startsWith('-') && !setting("no-sign-negative")) ? Math.abs(data.value) : -Math.abs(data.value));    
+                        data.value = (rawvalue.startsWith('+') || (!rawvalue.startsWith('-') && !setting("no-sign-negative")) ? Math.abs(data.value) : -Math.abs(data.value));
                     else
                         data.value = (rawvalue.startsWith('+') || (!rawvalue.startsWith('-') && !setting("no-sign-negative")) ? -Math.abs(data.value) : Math.abs(data.value));
                     this.changeHP(data.value, data.target); //Heal with a + but everything else is a hurt
@@ -208,15 +229,15 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
             this.addDeathST($(ev.currentTarget).hasClass('save'), -1);
         });
 
-        
+
         html.find('.resource').mousemove(ev => {
             if (!setting("allow-bar-click"))
                 return;
             let perc = ev.offsetX / $(ev.currentTarget).width();
-            if (setting("wounds-system"))  perc = 1 - perc;            
+            if (setting("wounds-system"))  perc = 1 - perc;
             let change = this.getChangeValue(perc);
 
-            if (setting("wounds-system"))  change = change * -1;      
+            if (setting("wounds-system"))  change = change * -1;
             $('.bar-change', html).html(change);
             log("resource change");
         }).click(ev => {
@@ -523,7 +544,40 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     onPersistPosition(position) {
-        game.user.setFlag("always-hp", "alwayshpPos", { left: position.left, top: position.top });
+        let pos = game.user.getFlag("always-hp", "alwayshpPos") || {};
+        if (pos.locked) return;
+
+        pos.left = position.left;
+        pos.top = position.top;
+
+        game.user.setFlag("always-hp", "alwayshpPos", pos);
+    }
+
+    toggleLock() {
+        let pos = game.user.getFlag("always-hp", "alwayshpPos") || {};
+        let html = $(this.element);
+        pos.locked = !pos.locked;
+
+        const mode = setting("positioning");
+        const lockClass = `locked-${mode}`;
+
+        if (pos.locked) {
+            const bounds = this.element.getBoundingClientRect();
+            pos.offsetX = mode.toLowerCase().includes("right") ? window.innerWidth - bounds.right : bounds.left;
+            pos.offsetY = mode.toLowerCase().includes("bottom") ? window.innerHeight - bounds.bottom : bounds.top;
+
+            this.element.classList.add(lockClass, 'locked');
+            this.element.style.setProperty('--always-hp-lock-x', `${pos.offsetX}px`);
+            this.element.style.setProperty('--always-hp-lock-y', `${pos.offsetY}px`);
+
+            html.find('#alwayshp-btn-lock').addClass('locked').find('i').removeClass('fa-lock-open').addClass('fa-lock');
+        } else {
+            this.element.classList.remove('locked-topLeft', 'locked-topRight', 'locked-bottomLeft', 'locked-bottomRight', 'locked');
+            this.element.style.removeProperty('--always-hp-lock-x');
+            this.element.style.removeProperty('--always-hp-lock-y');
+            html.find('#alwayshp-btn-lock').removeClass('locked').find('i').removeClass('fa-lock').addClass('fa-lock-open');
+        }
+        game.user.setFlag("always-hp", "alwayshpPos", pos);
     }
 
     static canLoad() {
@@ -533,6 +587,10 @@ export class AlwaysHP extends HandlebarsApplicationMixin(ApplicationV2) {
 
 Hooks.on('init', () => {
     registerSettings();
+
+    Handlebars.registerHelper('always-hp', function (key) {
+      return setting(key);
+    });
 
     game.keybindings.register('always-hp', 'toggle-key', {
         name: 'ALWAYSHP.toggle-key.name',
@@ -731,4 +789,3 @@ Hooks.on("renderSettingsConfig", (app, html, user) => {
     <color-picker name="always-hp.hurt-dark" value="${setting('hurt-dark') || '#ff0000'}"></color-picker>
     `);
 });
-
