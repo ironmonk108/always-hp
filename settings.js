@@ -8,7 +8,6 @@ export const registerSettings = function () {
         'topRight': game.i18n.localize("ALWAYSHP.top-right"),
         'bottomLeft': game.i18n.localize("ALWAYSHP.bottom-left"),
         'bottomRight': game.i18n.localize("ALWAYSHP.bottom-right"),
-        'lock': game.i18n.localize("ALWAYSHP.lock"),
     };
 
     let showoptions = {
